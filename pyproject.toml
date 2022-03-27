@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "checkpoint"
+version = "0.1.0"
+description = "Checkpointing functions for easier debugging"
+authors = ["Holger Hoefling <hhoeflin@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+GitPython = "^3.1.27"
+typer = "^0.4.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.1.1"
+pytest-pudb = "^0.7.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
