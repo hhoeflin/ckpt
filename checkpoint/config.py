@@ -2,7 +2,7 @@ import hashlib
 import os
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from git.repo import Repo
 
@@ -30,9 +30,12 @@ def repo_root(path: Path = Path(".")) -> Optional[Path]:
     return None
 
 
-def derive_ckpt_dir(
+def set_ckpt_dir(
+    ckpt_dir: Path = Path(
+        os.environ.get("CKPT_DIR", Path(tempfile.gettempdir()) / "checkpoint")
+    ),
     repo_root_dir: Optional[Path] = repo_root(Path(os.getcwd())),
-) -> Path:
+):
     """
     Function to derive the ckpt directory.
 
@@ -40,17 +43,34 @@ def derive_ckpt_dir(
     if the working directory is changed and this would be undesirable
     behavior.
     """
-    ckpt_dir = Path(os.environ.get("CKPT_DIR", tempfile.gettempdir()))
-    # depending on the repo root, add subdirectory
-
     if repo_root_dir is None:
         ckpt_dir = ckpt_dir / "default"
     else:
         hash_str = hashlib.md5(str(repo_root_dir.resolve()).encode()).hexdigest()
         ckpt_dir = ckpt_dir / hash_str
 
-    return ckpt_dir
+    state["ckpt_dir"] = ckpt_dir
+
+
+def get_ckpt_dir() -> Path:
+    return state["ckpt_dir"]
+
+
+def ckpt_file(ckpt_dir: Path, ckpt_name: str) -> Path:
+    return ckpt_dir / f"{ckpt_name}.pkl"
+
+
+def get_ckpts_sorted() -> List[Path]:
+    """
+    Find checkpoint file that was created last and return its name.
+    """
+    ckpt_dir = get_ckpt_dir()
+    all_files = sorted(
+        list(ckpt_dir.glob("*.pkl")), key=lambda file: file.stat().st_mtime
+    )
+    return all_files
 
 
 # the ckpt_directory to use
-ckpt_dir = derive_ckpt_dir()
+state = dict()
+set_ckpt_dir()
