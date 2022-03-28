@@ -1,6 +1,6 @@
 import inspect
 
-from checkpoint import checkpoint
+from ckpt import checkpoint
 
 
 @checkpoint(cond=True)

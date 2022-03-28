@@ -1,6 +1,6 @@
 import sys
 from dataclasses import dataclass
-from functools import partial, wraps
+from functools import partial
 from importlib import import_module
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Tuple, Union
@@ -58,7 +58,7 @@ class Task:
         decorated_func = getattr(imp_mod, self.func_name)
 
         # check if this is a checkpoint wrapper; should be the case
-        if isinstance(decorated_func, CheckpointWrapper):
+        if isinstance(decorated_func, CkptWrapper):
             return partial(decorated_func.func, *self.args, **self.kwargs)
         else:
             raise Exception(
@@ -69,7 +69,7 @@ class Task:
         return self.to_partial()()
 
 
-class CheckpointWrapper:
+class CkptWrapper:
     def __init__(
         self,
         func: Callable,
@@ -128,32 +128,7 @@ def checkpoint(
         else:
             ckpt_name = name
 
-        return CheckpointWrapper(
-            func=func, ckpt_name=ckpt_name, on_error=on_error, cond=cond
-        )
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            """Performs saving the function and arguments when necessary."""
-            task = Task.from_func(func, *args, **kwargs)
-            # go through the condition if provided
-            if isinstance(cond, bool):
-                save = cond
-            elif isinstance(cond, Callable):
-                save = cond(*args, **kwargs)
-            else:
-                raise TypeError("cond needs to be bool or a Callable")
-
-            if save:
-                _save_ckpt(task, ckpt_name)
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                if on_error:
-                    _save_ckpt(task, ckpt_name)
-                raise e
-
-        return wrapper
+        return CkptWrapper(func=func, ckpt_name=ckpt_name, on_error=on_error, cond=cond)
 
     return ckpt_worker
 

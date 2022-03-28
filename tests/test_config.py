@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 
-from checkpoint.config import get_ckpt_dir, set_ckpt_dir
+from ckpt.config import get_ckpt_dir, set_ckpt_dir
 
 
 def test_derive_ckpt_dir():
