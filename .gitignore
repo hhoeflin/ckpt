@@ -1,6 +1,4 @@
 
-conda_env
+.conda_env
 __pycache__
-
-dist/ckpt-0.1.0-py3-none-any.whl
-dist/ckpt-0.1.0.tar.gz
+dist

@@ -1,30 +1,43 @@
-[tool.poetry]
-name = "ckpt"
-version = "0.1.1"
-description = "Checkpointing functions for easier debugging"
-authors = ["Holger Hoefling <hhoeflin@gmail.com>"]
-license = "MIT"
-
-[tool.poetry.dependencies]
-python = "^3.8"
-GitPython = "^3.1.27"
-typer = "^0.4.0"
-ipdb = {version = "^0.13.9", optional = true}
-dill = "^0.3.4"
-
-[tool.poetry.dev-dependencies]
-pytest = "^7.1.1"
-pytest-pudb = "^0.7.0"
-
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
 
-[tool.poetry.scripts]
+[project]
+name = "ckpt"
+authors = [{name = "Holger Hoefling", email = "hhoeflin@gmail.com"}]
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License"]
+dynamic = ["version", "description"]
+requires-python = ">=3.8"
+
+dependencies = [
+    "GitPython >=3.1.27",
+    "typer >=0.4.0",
+    "dill >=0.3.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest >=6.2.5",
+    "pytest-pudb >=0.7.0",
+    "pudb >=2021.2.2",
+    "ipython >=7.30.1",
+    "bpython >=0.22.1",
+    "ipdb >=0.13.9",
+    "flakehell >= 0.9.0",
+]
+
+[project.urls]
+Home = "https://hhoeflin.github.io/ckpt/"
+
+[project.scripts]
 checkpoint = "ckpt.main:app"
 
 [tool.black]
 line-length = 88
+
+[tool.flakehell]
+max-line-length = 88
 
 [tool.pyright]
 include = ["checkpoint", "tests"]
