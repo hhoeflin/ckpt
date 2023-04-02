@@ -1,40 +1,47 @@
-import hashlib
 import os
-import tempfile
 from pathlib import Path
-from typing import List, Optional
-
-from git.repo import Repo
+from typing import Any, Dict, List, Optional
 
 
-def repo_root(path: Path = Path(".")) -> Optional[Path]:
-    """
-    Find the root of the current repository.
-
-    Args:
-        path (Path): A path in the repository.
-
-    Returns:
-        Optional[Path]: The root of the repo if it is a repo, None otherwise.
-
-    """
-    try:
-        repo = Repo(path, search_parent_directories=True)
-        if repo.working_tree_dir is None:
-            return None
-        else:
-            return Path(repo.working_tree_dir)
-    except Exception:
-        pass
+def search_parent_ckpt_dir(cwd: Path) -> Optional[Path]:
+    for path in [cwd] + list(cwd.parents):
+        cand_dir = path / ".pyckpt"
+        if cand_dir.exists() and cand_dir.is_dir():
+            return cand_dir
 
     return None
 
 
+def user_ckpt_dir() -> Optional[Path]:
+    if "HOME" in os.environ:
+        user_root_dir = Path(
+            os.environ.get("XDG_STATE_HOME", f"{os.environ['HOME']}/.local/.state")
+        )
+        return user_root_dir / "pyckpt"
+    else:
+        return None
+
+
+def resolve_ckpt_dir(
+    ckpt_dir: Optional[Path] = None,
+) -> Path:
+    if ckpt_dir is not None:
+        return ckpt_dir
+
+    if "PYCKPT_DIR" in os.environ:
+        return Path(os.environ["PYCKPT_DIR"])
+
+    if (ckpt_dir := search_parent_ckpt_dir(Path.cwd())) is not None:
+        return ckpt_dir
+
+    if (ckpt_dir := user_ckpt_dir()) is not None:
+        return ckpt_dir
+
+    raise Exception("Could not find ckpt-directory")
+
+
 def set_ckpt_dir(
-    ckpt_dir: Path = Path(
-        os.environ.get("CKPT_DIR", Path(tempfile.gettempdir()) / "checkpoint")
-    ),
-    repo_root_dir: Optional[Path] = repo_root(Path(os.getcwd())),
+    ckpt_dir: Optional[Path] = None,
 ):
     """
     Function to derive the ckpt directory.
@@ -43,11 +50,7 @@ def set_ckpt_dir(
     if the working directory is changed and this would be undesirable
     behavior.
     """
-    if repo_root_dir is None:
-        ckpt_dir = ckpt_dir / "default"
-    else:
-        hash_str = hashlib.md5(str(repo_root_dir.resolve()).encode()).hexdigest()
-        ckpt_dir = ckpt_dir / hash_str
+    ckpt_dir = resolve_ckpt_dir(ckpt_dir)
 
     state["ckpt_dir"] = ckpt_dir
 
@@ -72,5 +75,5 @@ def get_ckpts_sorted() -> List[Path]:
 
 
 # the ckpt_directory to use
-state = dict()
+state: Dict[str, Any] = dict()
 set_ckpt_dir()

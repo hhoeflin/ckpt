@@ -5,7 +5,7 @@ from typing import Optional
 import typer
 
 from .config import ckpt_file, get_ckpt_dir, get_ckpts_sorted, set_ckpt_dir
-from .run import Debuggers, run_ckpt
+from .run import Debuggers, Shells, run_ckpt
 
 app = typer.Typer()
 
@@ -33,15 +33,34 @@ def info():
 
 
 @app.command()
+def init():
+    """Initialize a ckpt-directory in the current directory."""
+    (Path.cwd() / ".pyckpt").mkdir(parents=True, exist_ok=True)
+
+
+@app.command()
 def run(
     name: Optional[str] = typer.Argument(
         None, help="Name of checkpoint. If unspecified, use last one."
     ),
-    debugger: Debuggers = typer.Option(
-        "pdb", "-d", "--debugger", help="The debugger to use."
+    use_shell: bool = typer.Option(
+        True, "--use-shell/--use-debug", help="Use the shell instead of debugger"
+    ),
+    debugger: Optional[Debuggers] = typer.Option(
+        None,
+        "-d",
+        "--debugger",
+        help="The debugger to use. Otherwise first installed in order",
+    ),
+    shell: Optional[Shells] = typer.Option(
+        None,
+        "-s",
+        "--shell",
+        help="The shell to use. Otherwise first installed in order",
     ),
     start: bool = typer.Option(
         False,
+        "--start/--locals",
         help="Debugging should start at beginning of function instead of at error.",
     ),
 ):
@@ -61,4 +80,10 @@ def run(
         typer.echo(f"File {str(use_ckpt_file)} does not exist.")
         raise typer.Exit()
 
-    run_ckpt(ckpt_file=use_ckpt_file, debugger=debugger, start=start)
+    run_ckpt(
+        ckpt_file=use_ckpt_file,
+        debugger=debugger,
+        shell=shell,
+        use_shell=use_shell,
+        start=start,
+    )

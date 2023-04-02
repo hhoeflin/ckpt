@@ -1,16 +1,14 @@
-import inspect
-
-from ckpt import checkpoint
+from ckpt import ckpt
 
 
-@checkpoint(cond=True)
+@ckpt(active=True)
 def outer(a, b):
     print(a)
     print(b)
     inner(a * 2, b * 2)
 
 
-@checkpoint(cond=True)
+@ckpt(active=True)
 def inner(c, d):
     print(c + d)
     print(c)
