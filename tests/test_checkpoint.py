@@ -1,5 +1,6 @@
 import dill as pickle
 
+import ckpt as checkpoint
 from ckpt import ckpt, set_ckpt_dir
 from ckpt.config import ckpt_file, get_ckpt_dir
 
@@ -16,19 +17,17 @@ def func_error(a, b=1):
 
 
 class TestCkpt:
-    def test_ckpt_normal(self, tmp_path):
-        set_ckpt_dir(tmp_path)
+    def test_ckpt_normal(self):
         ckpt(active=True)(func_normal)(a=0)
 
         file = ckpt_file(get_ckpt_dir(), "func_normal")
 
         with file.open("rb") as f:
             task = pickle.load(f)
-            assert task.ns(start=True) == dict(a=0, b=1)
-            assert task.ns(start=False) == dict(a=0, b=1)
+            assert task.ns(start=True) == dict(a=0, b=1, _ckpt=checkpoint)
+            assert task.ns(start=False) == dict(a=0, b=1, _ckpt=checkpoint)
 
-    def test_ckpt_error(self, tmp_path):
-        set_ckpt_dir(tmp_path)
+    def test_ckpt_error(self):
         try:
             ckpt()(func_error)(a=0)
         except:
@@ -38,5 +37,5 @@ class TestCkpt:
 
         with file.open("rb") as f:
             task = pickle.load(f)
-            assert task.ns(start=True) == dict(a=0, b=1)
-            assert task.ns(start=False) == dict(a=2, b=3, c=4)
+            assert task.ns(start=True) == dict(a=0, b=1, _ckpt=checkpoint)
+            assert task.ns(start=False) == dict(a=2, b=3, c=4, _ckpt=checkpoint)
