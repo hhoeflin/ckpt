@@ -16,7 +16,7 @@ from .config import ckpt_file, get_ckpt_dir
 @dataclass
 class Task:
     module_name: str
-    module_file: str
+    module_file: Path
     func_name: str
     args: Tuple[Any, ...]
     kwargs: Dict[str, Any]
@@ -42,7 +42,7 @@ class Task:
 
         return cls(
             module_name=module_name,
-            module_file=module_file,
+            module_file=Path(module_file).absolute(),
             func_name=func_name,
             args=args,
             kwargs=kwargs,

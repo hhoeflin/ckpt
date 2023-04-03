@@ -126,6 +126,7 @@ def _use_shell_single(shell: Shells, start: bool, task: Task):
 
 
 def _use_shell(shell: Optional[Shells], start: bool, task: Task):
+
     if shell is None:
         shell_list = [s for s in Shells]
     else:

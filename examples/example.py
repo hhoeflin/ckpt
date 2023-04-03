@@ -13,6 +13,8 @@ def inner(c, d):
     print(c + d)
     print(c)
     print(d)
+    e = c + d
+    raise Exception()
 
 
 if __name__ == "__main__":
