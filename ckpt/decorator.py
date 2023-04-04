@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 from .task import Task, stack
@@ -20,7 +21,12 @@ class CkptWrapper:
 
     def __call__(self, *args, **kwargs):
         """Performs saving the function and arguments when necessary."""
-        task = Task.from_func(self.func, *args, **kwargs)
+        try:
+            task = Task.from_func(self.func, *args, **kwargs)
+        except Exception as e:
+            warnings.warn(f"Could not wrap function call due to error {str(e)}")
+            return self.func(*args, **kwargs)
+
         task.ckpt_name = self.ckpt_name
         # go through the condition if provided
         if isinstance(self.active, bool):
@@ -31,9 +37,9 @@ class CkptWrapper:
             raise TypeError("cond needs to be bool or a Callable")
 
         if save:
-            stack.append(task)
             task.save(self.ckpt_name)
         try:
+            stack.append(task)
             return self.func(*args, **kwargs)
         except Exception as e:
             if self.on_error:

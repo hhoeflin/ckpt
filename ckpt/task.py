@@ -1,10 +1,11 @@
+import importlib.util
 import inspect
 import sys
 from dataclasses import dataclass
 from functools import partial
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import dill as pickle
 
@@ -34,7 +35,7 @@ class Task:
 
         module = sys.modules[func.__module__]
         module_name = module.__name__
-        module_file = module.__file__
+        module_file = getattr(module, "__file__", None)
 
         assert module_file is not None
 
@@ -93,6 +94,13 @@ class Task:
         res_ns["_ckpt"] = ckpt
         return res_ns
 
+    def store_locals(self, stack_depth=1):
+        frame = sys._getframe(stack_depth)
+        if frame is None:
+            raise Exception("Can't access frame")
+        else:
+            self.locals = frame.f_locals
+
     def __call__(self):
         return self.to_partial()()
 
@@ -104,4 +112,25 @@ class Task:
         with ckpt_file(ckpt_dir, ckpt_name).open("wb") as f:
             pickle.dump(self, f)
 
+
 stack: List[Task] = []
+
+
+def clean_locals(locals_dict: Dict[str, Any]) -> Dict[str, Any]:
+    l = locals_dict.copy()
+
+    # detect if in IPython, if yes, exclude certain variables from locals
+
+    return l
+
+
+def load_module_from_file(file: Union[Path, str], module_name: Optional[str]):
+    file = Path(file)
+    if module_name is None:
+        module_name = file.stem
+    spec = importlib.util.spec_from_file_location(module_name, str(file))
+    assert spec is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
