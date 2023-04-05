@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-import dill as pickle
+import cloudpickle as pickle
 
 import ckpt as checkpoint
 from ckpt import ckpt

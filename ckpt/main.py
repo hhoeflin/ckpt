@@ -75,10 +75,6 @@ def run(
     else:
         use_ckpt_file = get_ckpt_file(name)
 
-    import pudb
-
-    pudb.set_trace()
-
     # check that the file exists
     if not use_ckpt_file.exists():
         typer.echo(f"File {str(use_ckpt_file)} does not exist.")
@@ -91,6 +87,7 @@ def run(
         use_shell=use_shell,
         start=start,
     )
+
 
 if __name__ == "__main__":
     app()

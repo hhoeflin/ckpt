@@ -1,12 +1,13 @@
 import importlib.util
 import inspect
-import pickle
 import sys
 from dataclasses import dataclass
 from functools import partial
 from importlib import import_module
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+
+import cloudpickle as pickle
 
 import ckpt
 
@@ -21,7 +22,7 @@ class Task:
     args: Tuple[Any, ...]
     kwargs: Dict[str, Any]
     ckpt_name: str
-    locals: Optional[Dict[str, Any]] = None
+    locals_pkl: Optional[bytes] = None
 
     @classmethod
     def from_func(cls, func, *args, **kwargs):
@@ -59,9 +60,13 @@ class Task:
         except ModuleNotFoundError:
             # add the directory of the file to the path and try again
             sys.path.insert(0, str(Path(self.module_file).parent))
-            imp_mod = import_module(module_name)
-            # and take it off again
-            sys.path.pop(0)
+            try:
+                imp_mod = import_module(module_name)
+            except:
+                raise
+            finally:
+                # and take it off again
+                sys.path.pop(0)
 
         return imp_mod
 
@@ -110,6 +115,28 @@ class Task:
 
         with get_ckpt_file(ckpt_name).open("wb") as f:
             pickle.dump(self, f)
+
+    @property
+    def locals(self) -> Optional[Dict[str, Any]]:
+        if self.locals_pkl is None:
+            return None
+        try:
+            return pickle.loads(self.locals_pkl)
+        except:
+            # maybe we have to attach the location of the original module to the
+            # search path
+            sys.path.insert(0, str(Path(self.module_file).parent))
+            try:
+                return pickle.loads(self.locals_pkl)
+            except:
+                raise
+            finally:
+                # and take it off again
+                sys.path.pop(0)
+
+    @locals.setter
+    def locals(self, value):
+        self.locals_pkl = pickle.dumps(value)
 
 
 stack: List[Task] = []
