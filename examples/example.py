@@ -1,5 +1,7 @@
 from ckpt import ckpt
 
+_hidden = True
+
 
 @ckpt(active=True)
 def outer(a, b):

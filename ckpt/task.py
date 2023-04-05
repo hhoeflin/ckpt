@@ -184,7 +184,9 @@ def clean_locals(locals_dict: Dict[str, Any]) -> Dict[str, Any]:
 
 def load_module_from_file(
     file: Union[Path, str],
+    global_name: Optional[str] = "**",
     module_name: Optional[str] = None,
+    stack_depth: int = 1,
 ):
     file = Path(file)
     if module_name is None:
@@ -195,3 +197,18 @@ def load_module_from_file(
     sys.modules[module_name] = module
     assert spec.loader is not None
     spec.loader.exec_module(module)
+
+    frame = sys._getframe(stack_depth)
+    if global_name is None:
+        frame.f_globals[module_name] = module
+    elif global_name == "*":
+        # read all items into globals that are not hidden
+        frame.f_globals.update(
+            {k: v for (k, v) in inspect.getmembers(module) if not k.startswith("_")}
+        )
+        pass
+    elif global_name == "**":
+        # read all items into globals
+        frame.f_globals.update({k: v for (k, v) in inspect.getmembers(module)})
+    else:
+        frame.f_globals[global_name] = module
