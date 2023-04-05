@@ -87,3 +87,6 @@ def run(
         use_shell=use_shell,
         start=start,
     )
+
+if __name__ == "__main__":
+    app()
