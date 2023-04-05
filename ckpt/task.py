@@ -1,5 +1,6 @@
 import importlib.util
 import inspect
+import pickle
 import sys
 from dataclasses import dataclass
 from functools import partial
@@ -7,11 +8,9 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import dill as pickle
-
 import ckpt
 
-from .config import ckpt_file, get_ckpt_dir
+from .config import get_ckpt_dir, get_ckpt_file
 
 
 @dataclass
@@ -109,7 +108,7 @@ class Task:
         ckpt_dir = get_ckpt_dir()
         ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-        with ckpt_file(ckpt_dir, ckpt_name).open("wb") as f:
+        with get_ckpt_file(ckpt_name).open("wb") as f:
             pickle.dump(self, f)
 
 
@@ -124,7 +123,10 @@ def clean_locals(locals_dict: Dict[str, Any]) -> Dict[str, Any]:
     return l
 
 
-def load_module_from_file(file: Union[Path, str], module_name: Optional[str]):
+def load_module_from_file(
+    file: Union[Path, str],
+    module_name: Optional[str] = None,
+):
     file = Path(file)
     if module_name is None:
         module_name = file.stem

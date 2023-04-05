@@ -4,8 +4,8 @@ from pathlib import Path
 import dill as pickle
 
 import ckpt as checkpoint
-from ckpt import ckpt, set_ckpt_dir
-from ckpt.config import ckpt_file, get_ckpt_dir
+from ckpt import ckpt
+from ckpt.config import get_ckpt_file
 from ckpt.task import Task
 
 
@@ -24,7 +24,7 @@ class TestCkpt:
     def test_ckpt_normal(self):
         ckpt(active=True)(func_normal)(a=0)
 
-        file = ckpt_file(get_ckpt_dir(), "func_normal")
+        file = get_ckpt_file("func_normal")
 
         with file.open("rb") as f:
             task = pickle.load(f)
@@ -37,7 +37,7 @@ class TestCkpt:
         except:
             pass
 
-        file = ckpt_file(get_ckpt_dir(), "func_error")
+        file = get_ckpt_file("func_error")
 
         with file.open("rb") as f:
             task = pickle.load(f)

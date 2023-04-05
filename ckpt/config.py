@@ -59,7 +59,9 @@ def get_ckpt_dir() -> Path:
     return state["ckpt_dir"]
 
 
-def ckpt_file(ckpt_dir: Path, ckpt_name: str) -> Path:
+def get_ckpt_file(ckpt_name: str, ckpt_dir: Optional[Path] = None) -> Path:
+    if ckpt_dir is None:
+        ckpt_dir = get_ckpt_dir()
     return ckpt_dir / f"{ckpt_name}.pkl"
 
 

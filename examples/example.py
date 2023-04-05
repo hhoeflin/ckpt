@@ -17,5 +17,19 @@ def inner(c, d):
     raise Exception()
 
 
+@ckpt(active=True)
+def function_copy():
+    inner_copy = inner
+    raise Exception()
+
+
 if __name__ == "__main__":
-    outer(a=5, b=3)
+    try:
+        outer(a=5, b=3)
+    except:
+        pass
+
+    try:
+        function_copy()
+    except:
+        pass

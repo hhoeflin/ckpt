@@ -4,7 +4,7 @@ from typing import Optional
 
 import typer
 
-from .config import ckpt_file, get_ckpt_dir, get_ckpts_sorted, set_ckpt_dir
+from .config import get_ckpt_dir, get_ckpt_file, get_ckpts_sorted, set_ckpt_dir
 from .run import Debuggers, Shells, run_ckpt
 
 app = typer.Typer()
@@ -19,10 +19,10 @@ def dir(ckpt_dir: Path = typer.Option(None, help="Root checkpoint directory")):
 @app.command()
 def clear():
     """Clear the current checkpoint directory."""
-    ckpt_dir = get_ckpt_dir()
-    typer.echo(f"Removing directory {ckpt_dir}")
-    if ckpt_dir.exists():
-        shutil.rmtree(ckpt_dir)
+    all_ckpts_sorted = get_ckpts_sorted()
+    typer.echo(f"Removing ckpts in directory {get_ckpt_dir()}")
+    for file in all_ckpts_sorted:
+        file.unlink()
 
 
 @app.command()
@@ -73,7 +73,11 @@ def run(
         else:
             use_ckpt_file = all_ckpts[-1]
     else:
-        use_ckpt_file = ckpt_file(get_ckpt_dir(), name)
+        use_ckpt_file = get_ckpt_file(name)
+
+    import pudb
+
+    pudb.set_trace()
 
     # check that the file exists
     if not use_ckpt_file.exists():

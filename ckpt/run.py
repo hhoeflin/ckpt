@@ -1,8 +1,7 @@
+import pickle
 from enum import Enum
 from pathlib import Path
 from typing import Optional
-
-import dill as pickle
 
 from .decorator import Task
 from .task import stack
