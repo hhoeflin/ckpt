@@ -55,9 +55,11 @@ class CkptWrapper:
 
 
 def ckpt(
+    func: Optional[Callable] = None,
+    /,
     name: Optional[str] = None,
     on_error: bool = True,
-    active: Union[bool, Callable[..., bool]] = False,
+    active: Union[bool, Callable[..., bool]] = True,
     save_locals: bool = True,
 ) -> Callable[[Callable], Any]:
     """
@@ -88,4 +90,7 @@ def ckpt(
             save_locals=save_locals,
         )
 
-    return ckpt_worker
+    if func is None:
+        return ckpt_worker
+    else:
+        return ckpt_worker(func)
