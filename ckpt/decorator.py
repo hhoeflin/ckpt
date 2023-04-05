@@ -37,7 +37,7 @@ class CkptWrapper:
             raise TypeError("cond needs to be bool or a Callable")
 
         if save:
-            task.save(self.ckpt_name)
+            task.save()
         try:
             stack.append(task)
             return self.func(*args, **kwargs)
@@ -48,7 +48,7 @@ class CkptWrapper:
                     tb = e.__traceback__
                     if tb is not None and tb.tb_next is not None:
                         task.locals = tb.tb_next.tb_frame.f_locals
-                task.save(self.ckpt_name)
+                task.save()
             raise
         finally:
             stack.pop()

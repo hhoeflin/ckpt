@@ -98,22 +98,25 @@ class Task:
         res_ns["_ckpt"] = ckpt
         return res_ns
 
-    def store_locals(self, stack_depth=1):
+    def store_locals(self, stack_depth: int = 1, save: bool = True):
         frame = sys._getframe(stack_depth)
         if frame is None:
             raise Exception("Can't access frame")
         else:
-            self.locals = frame.f_locals
+            self.locals = clean_locals(frame.f_locals)
+
+        if save:
+            self.save()
 
     def __call__(self):
         return self.to_partial()()
 
-    def save(self, ckpt_name):
+    def save(self):
 
         ckpt_dir = get_ckpt_dir()
         ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-        with get_ckpt_file(ckpt_name).open("wb") as f:
+        with get_ckpt_file(self.ckpt_name).open("wb") as f:
             pickle.dump(self, f)
 
     @property
@@ -142,11 +145,40 @@ class Task:
 stack: List[Task] = []
 
 
+def run_from_ipython():
+    try:
+        __IPYTHON__
+        return True
+    except NameError:
+        return False
+
+
 def clean_locals(locals_dict: Dict[str, Any]) -> Dict[str, Any]:
-    l = locals_dict.copy()
 
     # detect if in IPython, if yes, exclude certain variables from locals
+    if run_from_ipython():
+        vars_to_omit = [
+            "_ih",
+            "_oh",
+            "_dh",
+            "In",
+            "Out",
+            "get_ipython",
+            "exit",
+            "quit",
+            "open",
+            "_",
+            "__",
+            "___",
+            "_i",
+            "_ii",
+            "_iii",
+            "_i1",
+        ]
+    else:
+        vars_to_omit = []
 
+    l = {k: v for k, v in locals_dict.items() if k not in vars_to_omit}
     return l
 
 
