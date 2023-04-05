@@ -116,10 +116,15 @@ def _use_shell_single(shell: Shells, start: bool, task: Task):
         )
 
     if shell == Shells.ipython:
+        import IPython.core.getipython
         from IPython.terminal.embed import InteractiveShellEmbed
 
-        ipy_shell = InteractiveShellEmbed(banner=entry_msg)
-        ipy_shell.mainloop(local_ns=ns, module=func_module)
+        if IPython.core.getipython.get_ipython() is None:
+            console = InteractiveShellEmbed.instance(banner=entry_msg)
+        else:
+            console = InteractiveShellEmbed(banner=entry_msg)
+
+        console.mainloop(local_ns=ns, module=func_module)
 
     else:
         raise ShellUnknownError(f"Unknown shell {shell}")
