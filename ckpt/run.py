@@ -2,7 +2,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-import cloudpickle as pickle
+import cloudpickle as pickle  # type: ignore
 
 from .decorator import Task
 from .task import stack
@@ -50,11 +50,11 @@ def _use_debugger_single(debugger: Debuggers, start: bool, task: Task):
 
         debug_module = pdb
     elif debugger == Debuggers.pudb:
-        import pudb
+        import pudb  # type: ignore
 
         debug_module = pudb
     elif debugger == Debuggers.ipdb:
-        import ipdb
+        import ipdb  # type: ignore
 
         debug_module = ipdb
     else:

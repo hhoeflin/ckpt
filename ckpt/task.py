@@ -2,13 +2,12 @@ import importlib.util
 import inspect
 import sys
 from collections.abc import MutableMapping, MutableSequence
-from dataclasses import dataclass
 from functools import partial
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
-import cloudpickle as pickle
+import cloudpickle as pickle  # type: ignore
 import loguru
 
 import ckpt
@@ -221,7 +220,7 @@ class Task:
             else:
                 to_store = clean_locals(frame.f_locals)
 
-        self.locals = to_store
+        self.locals = to_store  # type: ignore
 
         if save:
             self.save()
