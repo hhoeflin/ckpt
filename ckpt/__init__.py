@@ -1,6 +1,6 @@
 """A package to create checkpoints in code for easier debugging."""
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 from .config import get_ckpt_dir, set_ckpt_dir
 from .decorator import ckpt
