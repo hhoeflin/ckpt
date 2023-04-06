@@ -20,6 +20,15 @@ def func_error(a, b=1):
     raise Exception()
 
 
+class UnPickleable:
+    def __getstate__(self):
+        raise Exception("I don't want to be pickled")
+
+
+def func_pickle_error(a):
+    raise ValueError("Just anything")
+
+
 class TestCkpt:
     def test_ckpt_normal(self):
         ckpt(active=True)(func_normal)(a=0)
@@ -52,3 +61,18 @@ class TestCkpt:
         task = Task.from_func(mod_b_func)
         assert task.module_name == "mod_a.mod_b"
         assert task.func_name == "mod_b_func"
+
+    def test_pickle_error(self):
+        try:
+            ckpt(active=True)(func_pickle_error)(UnPickleable())
+        except ValueError:
+            pass
+
+        file = get_ckpt_file("func_pickle_error")
+
+        with file.open("rb") as f:
+            task = pickle.load(f)
+            locals_dict = task.locals
+
+            assert isinstance(locals_dict["a"], checkpoint.PickleError)
+            assert isinstance(task._args[0], checkpoint.PickleError)

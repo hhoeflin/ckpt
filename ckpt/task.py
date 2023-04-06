@@ -1,11 +1,12 @@
 import importlib.util
 import inspect
 import sys
+from collections.abc import MutableMapping, MutableSequence
 from dataclasses import dataclass
 from functools import partial
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import cloudpickle as pickle
 
@@ -14,15 +15,117 @@ import ckpt
 from .config import get_ckpt_dir, get_ckpt_file
 
 
-@dataclass
+class PickleError(Exception):
+    pass
+
+
+class Pickler:
+    def __init__(self, module_file: Path):
+        self.module_file = module_file
+
+    def dumps(self, value: Any) -> bytes:
+        try:
+            res = pickle.dumps(value)
+        except Exception as e:
+            res = pickle.dumps(PickleError(str(e)))
+
+        return res
+
+    def loads(self, value: bytes) -> Any:
+        try:
+            return pickle.loads(value)
+        except:
+            # maybe we have to attach the location of the original module to the
+            # search path
+            sys.path.insert(0, str(Path(self.module_file).parent))
+            try:
+                return pickle.loads(value)
+            except:
+                raise
+            finally:
+                # and take it off again
+                sys.path.pop(0)
+
+
+class DictPickleProxy(MutableMapping):
+    def __init__(
+        self,
+        initialdata,
+        pickler: Pickler,
+    ):
+        super().__init__()
+        self.pickler = pickler
+        self.data: Dict[str, bytes] = {}
+        self.update(initialdata)
+
+    def __getitem__(self, key):
+        return self.pickler.loads(self.data[key])
+
+    def __setitem__(self, key, value):
+        self.data[key] = self.pickler.dumps(value)
+
+    def __delitem__(self, key):
+        del self.data[key]
+
+    def __len__(self):
+        return len(self.data)
+
+    def __iter__(self):
+        return self.data.__iter__()
+
+
+class ListPickleProxy(MutableSequence):
+    def __init__(
+        self,
+        initialdata,
+        pickler: Pickler,
+    ):
+        super().__init__()
+        self.data: List[bytes] = []
+        self.pickler = pickler
+        self.extend(initialdata)
+
+    def __getitem__(self, key):
+        return self.pickler.loads(self.data[key])
+
+    def __setitem__(self, key, value):
+        self.data[key] = self.pickler.dumps(value)
+
+    def __delitem__(self, key):
+        del self.data[key]
+
+    def __len__(self):
+        return len(self.data)
+
+    def insert(self, idx, obj):
+        self.data.insert(idx, self.pickler.dumps(obj))
+
+
 class Task:
     module_name: str
     module_file: Path
     func_name: str
-    args: Tuple[Any, ...]
-    kwargs: Dict[str, Any]
     ckpt_name: str
-    locals_pkl: Optional[bytes] = None
+    _args: ListPickleProxy
+    _kwargs: DictPickleProxy
+    _locals: Optional[DictPickleProxy] = None
+
+    def __init__(
+        self,
+        module_name: str,
+        module_file: Path,
+        func_name: str,
+        ckpt_name: str,
+        args: Sequence[Any],
+        kwargs: Dict[str, Any],
+    ):
+        self.module_name = module_name
+        self.module_file = module_file
+        self.func_name = func_name
+        self.ckpt_name = ckpt_name
+
+        self._args = ListPickleProxy(args, pickler=Pickler(module_file))
+        self._kwargs = DictPickleProxy(kwargs, pickler=Pickler(module_file))
 
     @classmethod
     def from_func(cls, func, *args, **kwargs):
@@ -80,30 +183,40 @@ class Task:
         from .decorator import CkptWrapper  # avoid circularity
 
         if isinstance(decorated_func, CkptWrapper):
-            return partial(decorated_func.func, *self.args, **self.kwargs)
+            return partial(decorated_func.func, *self._args, **self._kwargs)
         else:
-            return partial(decorated_func, *self.args, **self.kwargs)
+            return partial(decorated_func, *self._args, **self._kwargs)
 
     def ns(self, start: bool = True):
         partial = self.to_partial()
-        if start or self.locals is None:
+        if start or self._locals is None:
             # get the locals from the function call
             sig = inspect.signature(partial.func)
-            bound = sig.bind(*self.args, **self.kwargs)
+            bound = sig.bind(*self._args, **self._kwargs)
             bound.apply_defaults()
             res_ns = {k: v for k, v in bound.arguments.items()}
         else:
-            res_ns = self.locals.copy()
+            res_ns = {k: v for k, v in self._locals.items()}
 
         res_ns["_ckpt"] = ckpt
         return res_ns
 
-    def store_locals(self, stack_depth: int = 1, save: bool = True):
-        frame = sys._getframe(stack_depth)
-        if frame is None:
-            raise Exception("Can't access frame")
+    def store_locals(
+        self,
+        locals: Optional[Dict[str, Any]] = None,
+        stack_depth: int = 1,
+        save: bool = True,
+    ):
+        if locals is not None:
+            to_store = locals
         else:
-            self.locals = clean_locals(frame.f_locals)
+            frame = sys._getframe(stack_depth)
+            if frame is None:
+                raise Exception("Can't access frame")
+            else:
+                to_store = clean_locals(frame.f_locals)
+
+        self.locals = to_store
 
         if save:
             self.save()
@@ -120,26 +233,19 @@ class Task:
             pickle.dump(self, f)
 
     @property
-    def locals(self) -> Optional[Dict[str, Any]]:
-        if self.locals_pkl is None:
-            return None
-        try:
-            return pickle.loads(self.locals_pkl)
-        except:
-            # maybe we have to attach the location of the original module to the
-            # search path
-            sys.path.insert(0, str(Path(self.module_file).parent))
-            try:
-                return pickle.loads(self.locals_pkl)
-            except:
-                raise
-            finally:
-                # and take it off again
-                sys.path.pop(0)
+    def locals(self) -> Optional[DictPickleProxy]:
+        return self._locals
 
     @locals.setter
-    def locals(self, value):
-        self.locals_pkl = pickle.dumps(value)
+    def locals(self, value: Union[None, Dict[str, Any], DictPickleProxy]):
+        if value is None:
+            self._locals = None
+        elif isinstance(value, DictPickleProxy):
+            self._locals = value
+        elif isinstance(value, dict):
+            self._locals = DictPickleProxy(value, pickler=Pickler(self.module_file))
+        else:
+            raise ValueError("Locals has to be a dict, none or DictPickleProxy")
 
 
 stack: List[Task] = []

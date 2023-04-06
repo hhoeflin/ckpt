@@ -4,7 +4,7 @@ __version__ = "0.2.3"
 
 from .config import get_ckpt_dir, set_ckpt_dir
 from .decorator import ckpt
-from .task import Task, load_module_from_file, stack
+from .task import PickleError, Task, load_module_from_file, stack
 
 __all__ = [
     "ckpt",
@@ -13,4 +13,5 @@ __all__ = [
     "Task",
     "stack",
     "load_module_from_file",
+    "PickleError",
 ]
