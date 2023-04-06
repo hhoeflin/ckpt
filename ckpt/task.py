@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import cloudpickle as pickle
+import loguru
 
 import ckpt
 
@@ -63,6 +64,8 @@ class DictPickleProxy(MutableMapping):
 
     def __setitem__(self, key, value):
         self.data[key] = self.pickler.dumps(value)
+        if isinstance(self.data[key], PickleError):
+            loguru.logger.warning(f"Could not pickle item {key}: {str(value)}")
 
     def __delitem__(self, key):
         del self.data[key]
@@ -90,6 +93,8 @@ class ListPickleProxy(MutableSequence):
 
     def __setitem__(self, key, value):
         self.data[key] = self.pickler.dumps(value)
+        if isinstance(self.data[key], PickleError):
+            loguru.logger.warning(f"Could not pickle item {key}: {str(value)}")
 
     def __delitem__(self, key):
         del self.data[key]
