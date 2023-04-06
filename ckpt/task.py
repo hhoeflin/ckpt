@@ -145,9 +145,9 @@ class Task:
 stack: List[Task] = []
 
 
-def run_from_ipython():
+def is_run_from_ipython():
     try:
-        __IPYTHON__
+        __IPYTHON__  # type: ignore
         return True
     except NameError:
         return False
@@ -156,7 +156,7 @@ def run_from_ipython():
 def clean_locals(locals_dict: Dict[str, Any]) -> Dict[str, Any]:
 
     # detect if in IPython, if yes, exclude certain variables from locals
-    if run_from_ipython():
+    if is_run_from_ipython():
         vars_to_omit = [
             "_ih",
             "_oh",
